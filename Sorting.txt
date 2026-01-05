@@ -1,0 +1,133 @@
+Option Explicit
+
+'=== Helper: remove accents ===
+Function RemoveAccents(ByVal s As String) As String
+    If Len(s) = 0 Then
+        RemoveAccents = s
+        Exit Function
+    End If
+    
+    s = Replace(s, "à", "a"): s = Replace(s, "á", "a")
+    s = Replace(s, "â", "a"): s = Replace(s, "ã", "a")
+    s = Replace(s, "ä", "a"): s = Replace(s, "å", "a")
+    s = Replace(s, "À", "A"): s = Replace(s, "Á", "A")
+    s = Replace(s, "Â", "A"): s = Replace(s, "Ã", "A")
+    s = Replace(s, "Ä", "A"): s = Replace(s, "Å", "A")
+    
+    s = Replace(s, "è", "e"): s = Replace(s, "é", "e")
+    s = Replace(s, "ê", "e"): s = Replace(s, "ë", "e")
+    s = Replace(s, "È", "E"): s = Replace(s, "É", "E")
+    s = Replace(s, "Ê", "E"): s = Replace(s, "Ë", "E")
+    
+    s = Replace(s, "ì", "i"): s = Replace(s, "í", "i")
+    s = Replace(s, "î", "i"): s = Replace(s, "ï", "i")
+    s = Replace(s, "Ì", "I"): s = Replace(s, "Í", "I")
+    s = Replace(s, "Î", "I"): s = Replace(s, "Ï", "I")
+    
+    s = Replace(s, "ò", "o"): s = Replace(s, "ó", "o")
+    s = Replace(s, "ô", "o"): s = Replace(s, "õ", "o")
+    s = Replace(s, "ö", "o"): s = Replace(s, "ø", "o")
+    s = Replace(s, "Ò", "O"): s = Replace(s, "Ó", "O")
+    s = Replace(s, "Ô", "O"): s = Replace(s, "Õ", "O")
+    s = Replace(s, "Ö", "O"): s = Replace(s, "Ø", "O")
+    
+    s = Replace(s, "ù", "u"): s = Replace(s, "ú", "u")
+    s = Replace(s, "û", "u"): s = Replace(s, "ü", "u")
+    s = Replace(s, "Ù", "U"): s = Replace(s, "Ú", "U")
+    s = Replace(s, "Û", "U"): s = Replace(s, "Ü", "U")
+    
+    s = Replace(s, "ç", "c"): s = Replace(s, "Ç", "C")
+    s = Replace(s, "ñ", "n"): s = Replace(s, "Ñ", "N")
+    s = Replace(s, "ý", "y"): s = Replace(s, "ÿ", "y")
+    s = Replace(s, "Ý", "Y")
+    
+    RemoveAccents = s
+End Function
+
+'=== Helper: collapse multiple spaces to single ===
+Function SingleSpaces(ByVal s As String) As String
+    Do While InStr(s, "  ") > 0
+        s = Replace(s, "  ", " ")
+    Loop
+    SingleSpaces = Trim$(s)
+End Function
+
+'=== Helper: remove everything except letters and space ===
+Function LettersAndSpacesOnly(ByVal s As String) As String
+    Dim i As Long, ch As String, out As String
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If (ch >= "A" And ch <= "Z") Or (ch >= "a" And ch <= "z") Or ch = " " Then
+            out = out + ch
+        End If
+    Next i
+    LettersAndSpacesOnly = out
+End Function
+
+Sub CleanNamesAndEmails()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim r As Long
+    Dim txt As String
+    
+    '=== SETTINGS: change if needed ===
+    Const nameCol As String = "A"   'Names column
+    Const mailCol As String = "B"   'Emails column
+    Const headerRow As Long = 1     'Data starts from headerRow+1
+    
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
+    If lastRow <= headerRow Then Exit Sub
+    
+    Application.ScreenUpdating = False
+    
+    For r = headerRow + 1 To lastRow
+        
+        '----- NAMES COLUMN RULES -----
+        txt = ws.Cells(r, nameCol).Value
+        
+        txt = RemoveAccents(txt)                 'accent → normal
+        txt = LettersAndSpacesOnly(txt)          'remove numbers & specials, keep space
+        txt = SingleSpaces(txt)                  'double → single space
+        txt = StrConv(txt, vbProperCase)         'capitalize each word
+        
+        ws.Cells(r, nameCol).Value = txt
+        
+        '----- EMAIL COLUMN RULES -----
+        txt = ws.Cells(r, mailCol).Value
+        
+        'remove common prefixes/text
+        txt = Replace(txt, "e-mail:", "", , , vbTextCompare)
+        txt = Replace(txt, "email:", "", , , vbTextCompare)
+        txt = Replace(txt, "mail:", "", , , vbTextCompare)
+        txt = Replace(txt, "(link send email)", "", , , vbTextCompare)
+        
+        'remove brackets
+        txt = Replace(txt, "[", "")
+        txt = Replace(txt, "]", "")
+        txt = Replace(txt, "(", "")
+        txt = Replace(txt, ")", "")
+        
+        'remove spaces around @ and .
+        txt = Replace(txt, " (at) ", "@", , , vbTextCompare)
+        txt = Replace(txt, " at ", "@", , , vbTextCompare)
+        txt = Replace(txt, "(at)", "@", , , vbTextCompare)
+        txt = Replace(txt, "[at]", "@", , , vbTextCompare)
+        txt = Replace(txt, " at ", "@", , , vbTextCompare)
+        txt = Replace(txt, " DOT ", ".", , , vbTextCompare)
+        txt = Replace(txt, " dot ", ".", , , vbTextCompare)
+        
+        'remove : ; and encoded spaces
+        txt = Replace(txt, ":", "")
+        txt = Replace(txt, ";", "")
+        txt = Replace(txt, "%20", "")
+        txt = Replace(txt, "&20", "")
+        
+        'collapse multiple spaces
+        txt = SingleSpaces(txt)
+        
+        ws.Cells(r, mailCol).Value = txt
+    Next r
+    
+    Application.ScreenUpdating = True
+End Sub
