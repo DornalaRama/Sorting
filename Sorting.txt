@@ -58,11 +58,36 @@ Function LettersAndSpacesOnly(ByVal s As String) As String
     For i = 1 To Len(s)
         ch = Mid$(s, i, 1)
         If (ch >= "A" And ch <= "Z") Or (ch >= "a" And ch <= "z") Or ch = " " Then
-            out = out + ch
+            out = out & ch
         End If
     Next i
     LettersAndSpacesOnly = out
 End Function
+
+'=== Fix mojibake characters on whole sheet ===
+Sub FixMojibake()
+    Dim ws As Worksheet
+    Dim rng As Range
+
+    Set ws = ActiveSheet
+    Set rng = ws.UsedRange   'entire used area on the sheet
+
+    With rng
+        .Replace "â€”", "—", xlPart
+        .Replace "â€“", "–", xlPart
+        .Replace "â€˜", "‘", xlPart
+        .Replace "â€™", "’", xlPart
+        .Replace "â€œ", "“", xlPart
+        .Replace "â€", "”", xlPart
+        .Replace "Ã¼", "ü", xlPart
+        .Replace "Ã¶", "ö", xlPart
+        .Replace "Ã©", "é", xlPart
+        .Replace "Ã¨", "è", xlPart
+        .Replace "Ã¡", "á", xlPart
+        .Replace "Ã±", "ñ", xlPart
+        'add more mappings if needed
+    End With
+End Sub
 
 Sub CleanNamesAndEmails()
     Dim ws As Worksheet
@@ -76,6 +101,10 @@ Sub CleanNamesAndEmails()
     Const headerRow As Long = 1     'Data starts from headerRow+1
     
     Set ws = ActiveSheet
+
+    'optional: first fix mojibake on this sheet
+    FixMojibake
+    
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
     If lastRow <= headerRow Then Exit Sub
     
@@ -88,7 +117,7 @@ Sub CleanNamesAndEmails()
         
         txt = RemoveAccents(txt)                 'accent → normal
         txt = LettersAndSpacesOnly(txt)          'remove numbers & specials, keep space
-        txt = Replace(txt, " Jr", "", , , vbTextCompare)      'remove Jr with preceding single space
+        txt = Replace(txt, " Jr", "", , , vbTextCompare) 'remove Jr with single leading space
         txt = SingleSpaces(txt)                  'double → single space
         txt = StrConv(txt, vbProperCase)         'capitalize each word
         
