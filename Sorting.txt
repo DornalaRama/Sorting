@@ -118,6 +118,7 @@ Sub CleanNamesAndEmails()
         txt = RemoveAccents(txt)                 'accent → normal
         txt = LettersAndSpacesOnly(txt)          'remove numbers & specials, keep space
         txt = Replace(txt, " Jr", "", , , vbTextCompare) 'remove Jr with single leading space
+        txt = Replace(txt, "Dr ", "", , , vbTextCompare) 'remove Dr with single leading space
         txt = SingleSpaces(txt)                  'double → single space
         txt = StrConv(txt, vbProperCase)         'capitalize each word
         
