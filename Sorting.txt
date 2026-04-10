@@ -1,5 +1,4 @@
 Option Explicit
-
 '=== Helper: remove accents ===
 Function RemoveAccents(ByVal s As String) As String
     If Len(s) = 0 Then
