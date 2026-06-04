@@ -1,0 +1,48 @@
+Sub RemoveRoleBasedEmails()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim email As String
+    Dim rolePatterns As Variant
+    
+    ' Define common role-based email prefixes
+    rolePatterns = Array("info", "support", "admin", "contact", "sales", _
+                         "help", "service", "mail", "postmaster", "webmaster", _
+                         "noreply", "no-reply", "newsletter", "billing", _
+                         "accounts", "hr", "humanresources", "careers", _
+                         "jobs", "marketing", "press", "media")
+    
+    ' Set the worksheet
+    Set ws = ThisWorkbook.Sheets("Sheet1")
+    
+    ' Find the last row with data in column B (Emails)
+    lastRow = ws.Cells(ws.Rows.Count, "B").End(xlUp).Row
+    
+    ' Loop from bottom to top to safely delete rows
+    For i = lastRow To 2 Step -1
+        email = LCase(Trim(ws.Cells(i, "B").Value))
+        
+        ' Check if email contains any role-based prefix
+        If email <> "" Then
+            If InStr(email, "@") > 0 Then
+                ' Extract the part before @
+                Dim localPart As String
+                localPart = LCase(Trim(Left(email, InStr(email, "@") - 1)))
+                
+                ' Check against role patterns
+                Dim j As Long
+                For j = LBound(rolePatterns) To UBound(rolePatterns)
+                    If localPart = rolePatterns(j) Or _
+                       InStr(localPart, rolePatterns(j) & ".") > 0 Or _
+                       InStr(localPart, "." & rolePatterns(j)) > 0 Or _
+                       localPart Like rolePatterns(j) & "*" Then
+                        ws.Rows(i).Delete
+                        Exit For
+                    End If
+                Next j
+            End If
+        End If
+    Next i
+    
+    MsgBox "Role-based emails have been removed!", vbInformation
+End Sub
